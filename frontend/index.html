@@ -8,174 +8,108 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>DWL Mapping Validator</h1>
-            <p class="subtitle">Validate that all source and target fields in your mapping document are referenced in your DataWeave 2.0 script</p>
-        </header>
-        
-        <main>
-            <!-- Step 1: File Upload -->
-            <div id="step-upload" class="step">
-                <h2>Step 1: Upload Mapping Document</h2>
-                <div class="upload-box">
-                    <label for="file-input" class="file-label">
-                        <span class="icon">📄</span>
-                        <span class="text">Click to upload or drag file here</span>
-                        <span class="subtext">Support: Excel (.xlsx, .xls), CSV</span>
-                    </label>
-                    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="file-input">
-                    <span id="file-name" class="file-name"></span>
-                </div>
-            </div>
-            
-            <!-- Step 2: Configure Columns -->
-            <div id="step-config" class="step" style="display: none;">
-                <h2>Step 2: Configure Mapping Document</h2>
-                <p class="step-info">Select which columns contain source and target fields, and which row to start from.</p>
-                
-                <div class="config-section">
-                    <div class="config-group">
-                        <label for="source-column">Source Column:</label>
-                        <select id="source-column"></select>
-                    </div>
-                    
-                    <div class="config-group">
-                        <label for="target-column">Target Column:</label>
-                        <select id="target-column"></select>
-                    </div>
-                    
-                    <div class="config-group">
-                        <label for="start-row">Start from Row:</label>
-                        <input type="number" id="start-row" value="1" min="1">
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-group">
+                    <label for="file-input" class="upload-label">Mapping Document</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="file-input">
+                        <span class="file-name" id="file-name">Choose file</span>
                     </div>
                 </div>
-                
-                <h3>Preview (First 10 Rows)</h3>
-                <div id="preview-table" class="table-container">
-                    <!-- Preview table will be inserted here -->
-                </div>
-                
-                <div class="button-group">
-                    <button id="back-btn" class="btn btn-secondary">Back</button>
-                    <button id="next-dwl-btn" class="btn btn-primary">Next: Add DWL Script</button>
+
+                <div class="upload-group">
+                    <label for="dwl-file-input" class="upload-label">DWL Script (Optional)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="dwl-file-input" accept=".dwl,.txt" class="file-input">
+                        <span class="file-name" id="dwl-file-name">Choose file</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Step 3: Upload DWL File -->
-            <div id="step-dwl-upload" class="step" style="display: none;">
-                <h2>Step 3: Upload DataWeave 2.0 Script</h2>
-                <p class="step-info">Upload the DWL file to validate the mapping against.</p>
+            <!-- Configuration Section -->
+            <div id="config-section" class="config-section" style="display: none;">
+                <div class="config-group">
+                    <label for="source-column">Source Column:</label>
+                    <select id="source-column"></select>
+                </div>
                 
-                <div class="upload-box">
-                    <label for="dwl-file-input" class="file-label">
-                        <span class="icon">⚙️</span>
-                        <span class="text">Click to upload or drag DWL file here</span>
-                        <span class="subtext">Support: DataWeave (.dwl, .txt)</span>
-                    </label>
-                    <input type="file" id="dwl-file-input" accept=".dwl,.txt" class="file-input">
-                    <span id="dwl-file-name" class="file-name"></span>
+                <div class="config-group">
+                    <label for="target-column">Target Column:</label>
+                    <select id="target-column"></select>
+                </div>
+                
+                <div class="config-group">
+                    <label for="start-row">Start from Row:</label>
+                    <input type="number" id="start-row" value="2" min="1">
                 </div>
 
-                <div id="dwl-preview-section" style="display: none; margin-top: 30px;">
-                    <h3>DWL Script Preview</h3>
-                    <div id="dwl-preview-box" class="code-preview-box">
-                        <!-- DWL preview will be shown here -->
-                    </div>
-                </div>
-                
-                <div class="button-group">
-                    <button id="back-dwl-btn" class="btn btn-secondary">Back</button>
-                    <button id="validate-dwl-btn" class="btn btn-primary" disabled>Validate Against DWL</button>
-                </div>
+                <button id="validate-btn" class="btn btn-primary">Validate</button>
             </div>
 
-            <!-- Step 4: Validation Mode Choice -->
-            <div id="step-validation-mode" class="step" style="display: none;">
-                <h2>Step 3: Choose Validation Mode</h2>
-                <p class="step-info">Validate just the mapping or validate against your DWL script.</p>
-                
-                <div class="validation-mode-options">
-                    <button id="validate-mapping-only-btn" class="mode-card">
-                        <div class="mode-icon">📋</div>
-                        <div class="mode-title">Mapping Only</div>
-                        <div class="mode-desc">Check if all source fields are mapped to target fields</div>
-                    </button>
-                    <button id="validate-with-dwl-btn" class="mode-card">
-                        <div class="mode-icon">⚙️</div>
-                        <div class="mode-title">Validate with DWL</div>
-                        <div class="mode-desc">Check if mapping fields exist in your DataWeave script</div>
-                    </button>
+            <!-- Results Section -->
+            <div id="results-section" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2>Validation Report</h2>
+                    <button id="new-validation-btn" class="btn btn-secondary">New Validation</button>
                 </div>
-                
-                <div class="button-group">
-                    <button id="back-mode-btn" class="btn btn-secondary">Back</button>
-                </div>
-            </div>
-            
-            <!-- Step 5: Results -->
-            <div id="step-results" class="step" style="display: none;">
-                <h2>Step 4: Validation Results</h2>
-                
-                <div id="summary" class="summary-box">
-                    <!-- Summary will be inserted here -->
-                </div>
-                
-                <div id="validation-type-badge" style="margin-bottom: 20px; text-align: center;"></div>
-                
-                <div class="results-section">
-                    <div id="mapped-section" class="result-section">
-                        <h3>✅ Mapped Fields (<span id="mapped-count">0</span>)</h3>
-                        <div id="mapped-list" class="result-list">
-                            <!-- Mapped fields will be listed here -->
-                        </div>
-                    </div>
-                    
-                    <div id="unmapped-section" class="result-section" style="display: none;">
-                        <h3>❌ Unmapped Fields (<span id="unmapped-count">0</span>)</h3>
-                        <div id="unmapped-list" class="result-list">
-                            <!-- Unmapped fields will be listed here -->
-                        </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-button active" data-tab="mapped">Mapped Fields</button>
+                        <button class="tab-button" data-tab="unmapped">Unmapped Fields</button>
+                        <button class="tab-button" data-tab="dwl" id="dwl-tab" style="display: none;">DWL Analysis</button>
                     </div>
 
-                    <!-- DWL Validation Results -->
-                    <div id="dwl-results-section" style="display: none;">
-                        <div id="source-fields-section" class="result-section">
-                            <h3>📥 Source Fields Analysis</h3>
-                            <div id="source-found-section" style="display: none;">
-                                <h4>Found in DWL (<span id="source-found-count">0</span>)</h4>
-                                <div id="source-found-list" class="result-list"></div>
+                    <!-- Mapped Fields Tab -->
+                    <div class="tab-content active" id="mapped-tab">
+                        <div id="mapped-list" class="field-list"></div>
+                    </div>
+
+                    <!-- Unmapped Fields Tab -->
+                    <div class="tab-content" id="unmapped-tab">
+                        <div id="unmapped-list" class="field-list"></div>
+                    </div>
+
+                    <!-- DWL Analysis Tab -->
+                    <div class="tab-content" id="dwl-tab-content">
+                        <div class="dwl-analysis">
+                            <div class="analysis-section">
+                                <h3>Source Fields</h3>
+                                <div class="analysis-subsection">
+                                    <h4>Found in DWL</h4>
+                                    <div id="source-found-list" class="field-list"></div>
+                                </div>
+                                <div class="analysis-subsection">
+                                    <h4>Not Found in DWL</h4>
+                                    <div id="source-not-found-list" class="field-list error-list"></div>
+                                </div>
                             </div>
-                            <div id="source-not-found-section" style="display: none;">
-                                <h4>Not Found in DWL (<span id="source-not-found-count">0</span>)</h4>
-                                <div id="source-not-found-list" class="result-list error-list"></div>
-                            </div>
-                        </div>
 
-                        <div id="target-fields-section" class="result-section">
-                            <h3>📤 Target Fields Analysis</h3>
-                            <div id="target-found-section" style="display: none;">
-                                <h4>Found in DWL (<span id="target-found-count">0</span>)</h4>
-                                <div id="target-found-list" class="result-list"></div>
-                            </div>
-                            <div id="target-not-found-section" style="display: none;">
-                                <h4>Not Found in DWL (<span id="target-not-found-count">0</span>)</h4>
-                                <div id="target-not-found-list" class="result-list error-list"></div>
+                            <div class="analysis-section">
+                                <h3>Target Fields</h3>
+                                <div class="analysis-subsection">
+                                    <h4>Found in DWL</h4>
+                                    <div id="target-found-list" class="field-list"></div>
+                                </div>
+                                <div class="analysis-subsection">
+                                    <h4>Not Found in DWL</h4>
+                                    <div id="target-not-found-list" class="field-list error-list"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="button-group">
-                    <button id="start-over-btn" class="btn btn-secondary">Start Over</button>
-                </div>
             </div>
-            
+
             <!-- Loading -->
             <div id="loading" class="loading" style="display: none;">
                 <div class="spinner"></div>
                 <p id="loading-text">Processing...</p>
             </div>
-        </main>
+        </div>
     </div>
     
     <script src="script.js"></script>
