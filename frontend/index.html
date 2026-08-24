@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Mapping Validator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Field Mapping Validator</h1>
+            <p class="subtitle">Validate that all source fields are mapped to target fields</p>
+        </header>
+        
+        <main>
+            <!-- Step 1: File Upload -->
+            <div id="step-upload" class="step">
+                <h2>Step 1: Upload Mapping Document</h2>
+                <div class="upload-box">
+                    <label for="file-input" class="file-label">
+                        <span class="icon">📄</span>
+                        <span class="text">Click to upload or drag file here</span>
+                        <span class="subtext">Support: Excel (.xlsx, .xls), CSV</span>
+                    </label>
+                    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="file-input">
+                    <span id="file-name" class="file-name"></span>
+                </div>
+            </div>
+            
+            <!-- Step 2: Configure Columns -->
+            <div id="step-config" class="step" style="display: none;">
+                <h2>Step 2: Configure Columns</h2>
+                <p class="step-info">Select which columns contain source and target fields, and which row to start from.</p>
+                
+                <div class="config-section">
+                    <div class="config-group">
+                        <label for="source-column">Source Column:</label>
+                        <select id="source-column"></select>
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="target-column">Target Column:</label>
+                        <select id="target-column"></select>
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="start-row">Start from Row:</label>
+                        <input type="number" id="start-row" value="1" min="1">
+                    </div>
+                </div>
+                
+                <h3>Preview (First 10 Rows)</h3>
+                <div id="preview-table" class="table-container">
+                    <!-- Preview table will be inserted here -->
+                </div>
+                
+                <div class="button-group">
+                    <button id="back-btn" class="btn btn-secondary">Back</button>
+                    <button id="validate-btn" class="btn btn-primary">Validate Mapping</button>
+                </div>
+            </div>
+            
+            <!-- Step 3: Results -->
+            <div id="step-results" class="step" style="display: none;">
+                <h2>Step 3: Validation Results</h2>
+                
+                <div id="summary" class="summary-box">
+                    <!-- Summary will be inserted here -->
+                </div>
+                
+                <div class="results-section">
+                    <div id="mapped-section" class="result-section">
+                        <h3>✅ Mapped Fields (<span id="mapped-count">0</span>)</h3>
+                        <div id="mapped-list" class="result-list">
+                            <!-- Mapped fields will be listed here -->
+                        </div>
+                    </div>
+                    
+                    <div id="unmapped-section" class="result-section" style="display: none;">
+                        <h3>❌ Unmapped Fields (<span id="unmapped-count">0</span>)</h3>
+                        <div id="unmapped-list" class="result-list">
+                            <!-- Unmapped fields will be listed here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="start-over-btn" class="btn btn-secondary">Start Over</button>
+                </div>
+            </div>
+            
+            <!-- Loading -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing...</p>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
