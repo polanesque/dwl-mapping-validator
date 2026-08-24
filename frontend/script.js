@@ -101,15 +101,25 @@ async function loadPreview(file) {
     }
 }
 
-async function loadDwlPreview(file) {
+function loadDwlPreview(file) {
     try {
-        const text = await file.text();
-        const lines = text.split('\n');
-        const previewLines = lines.slice(0, 20).join('\n');
-        const hasMoreLines = lines.length > 20;
+        const reader = new FileReader();
         
-        dwlPreviewBox.innerHTML = `<pre>${escapeHtml(previewLines)}${hasMoreLines ? '\n... (truncated)' : ''}</pre>`;
-        dwlPreviewSection.style.display = 'block';
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            const previewLines = lines.slice(0, 20).join('\n');
+            const hasMoreLines = lines.length > 20;
+            
+            dwlPreviewBox.innerHTML = `<pre>${escapeHtml(previewLines)}${hasMoreLines ? '\n... (truncated)' : ''}</pre>`;
+            dwlPreviewSection.style.display = 'block';
+        };
+        
+        reader.onerror = function() {
+            throw new Error('Failed to read file');
+        };
+        
+        reader.readAsText(file);
     } catch (error) {
         alert(`Error reading DWL file: ${error.message}`);
         dwlFileInput.value = '';
