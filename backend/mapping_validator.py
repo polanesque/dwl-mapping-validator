@@ -258,7 +258,7 @@ class MappingValidator:
             rf'payload\.{re.escape(normalized)}',  # payload.FIELD_NAME
             rf'\${re.escape(normalized)}',  # $FIELD_NAME
             rf'\"{re.escape(normalized)}\"',  # "FIELD_NAME"
-            rf\"'{re.escape(normalized)}'\",  # 'FIELD_NAME'
+            r"'" + re.escape(normalized) + r"'",  # 'FIELD_NAME'
         ]
         
         for pattern in patterns:
