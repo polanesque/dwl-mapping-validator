@@ -1,47 +1,41 @@
 const API_BASE = 'http://localhost:5000/api';
 
-// DOM Elements - Upload Step
+// DOM Elements
 const fileInput = document.getElementById('file-input');
 const fileName = document.getElementById('file-name');
-const uploadStep = document.getElementById('step-upload');
-const configStep = document.getElementById('step-config');
-const dwlUploadStep = document.getElementById('step-dwl-upload');
-const validationModeStep = document.getElementById('step-validation-mode');
-const resultsStep = document.getElementById('step-results');
+const dwlFileInput = document.getElementById('dwl-file-input');
+const dwlFileName = document.getElementById('dwl-file-name');
+const configSection = document.getElementById('config-section');
+const resultsSection = document.getElementById('results-section');
 const loadingDiv = document.getElementById('loading');
 const loadingText = document.getElementById('loading-text');
 
-// DOM Elements - Config Step
+// Config Elements
 const sourceColumnSelect = document.getElementById('source-column');
 const targetColumnSelect = document.getElementById('target-column');
 const startRowInput = document.getElementById('start-row');
-const previewTable = document.getElementById('preview-table');
-
-// DOM Elements - DWL Upload Step
-const dwlFileInput = document.getElementById('dwl-file-input');
-const dwlFileName = document.getElementById('dwl-file-name');
-const dwlPreviewSection = document.getElementById('dwl-preview-section');
-const dwlPreviewBox = document.getElementById('dwl-preview-box');
-const validateDwlBtn = document.getElementById('validate-dwl-btn');
-
-// DOM Elements - Buttons
-const backBtn = document.getElementById('back-btn');
-const nextDwlBtn = document.getElementById('next-dwl-btn');
-const backDwlBtn = document.getElementById('back-dwl-btn');
-const backModeBtn = document.getElementById('back-mode-btn');
-const validateMappingOnlyBtn = document.getElementById('validate-mapping-only-btn');
-const validateWithDwlBtn = document.getElementById('validate-with-dwl-btn');
-const startOverBtn = document.getElementById('start-over-btn');
+const validateBtn = document.getElementById('validate-btn');
+const newValidationBtn = document.getElementById('new-validation-btn');
 
 // State
 let currentFile = null;
 let currentDwlFile = null;
 let columns = [];
-let validationMode = null; // 'mapping-only' or 'with-dwl'
+let hasDwlFile = false;
 
 // File upload handling
 fileInput.addEventListener('change', handleFileSelect);
 dwlFileInput.addEventListener('change', handleDwlFileSelect);
+validateBtn.addEventListener('click', handleValidate);
+newValidationBtn.addEventListener('click', resetForm);
+
+// Tab handling
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', (e) => {
+        const tabName = e.target.dataset.tab;
+        switchTab(tabName);
+    });
+});
 
 function handleFileSelect(e) {
     const file = e.target.files[0];
@@ -57,8 +51,7 @@ function handleDwlFileSelect(e) {
     if (file) {
         currentDwlFile = file;
         dwlFileName.textContent = file.name;
-        loadDwlPreview(file);
-        validateDwlBtn.disabled = false;
+        hasDwlFile = true;
     }
 }
 
@@ -86,45 +79,16 @@ async function loadPreview(file) {
         // Populate column selectors
         populateColumnSelects(columns);
         
-        // Show preview
-        showPreview(result.preview, columns);
-        
-        // Move to config step
-        uploadStep.style.display = 'none';
-        configStep.style.display = 'block';
+        // Show config section
+        configSection.style.display = 'block';
     } catch (error) {
         alert(`Error: ${error.message}`);
         fileInput.value = '';
-        fileName.textContent = '';
+        fileName.textContent = 'Choose file';
+        currentFile = null;
+        configSection.style.display = 'none';
     } finally {
         loadingDiv.style.display = 'none';
-    }
-}
-
-function loadDwlPreview(file) {
-    try {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const lines = text.split('\n');
-            const previewLines = lines.slice(0, 20).join('\n');
-            const hasMoreLines = lines.length > 20;
-            
-            dwlPreviewBox.innerHTML = `<pre>${escapeHtml(previewLines)}${hasMoreLines ? '\n... (truncated)' : ''}</pre>`;
-            dwlPreviewSection.style.display = 'block';
-        };
-        
-        reader.onerror = function() {
-            throw new Error('Failed to read file');
-        };
-        
-        reader.readAsText(file);
-    } catch (error) {
-        alert(`Error reading DWL file: ${error.message}`);
-        dwlFileInput.value = '';
-        dwlFileName.textContent = '';
-        currentDwlFile = null;
     }
 }
 
@@ -151,90 +115,7 @@ function populateColumnSelects(cols) {
     }
 }
 
-function showPreview(rows, cols) {
-    let html = '<table class="preview-table"><thead><tr>';
-    
-    cols.forEach(col => {
-        html += `<th>${escapeHtml(col)}</th>`;
-    });
-    
-    html += '</tr></thead><tbody>';
-    
-    rows.forEach((row, idx) => {
-        html += '<tr>';
-        cols.forEach(col => {
-            const value = row[col] || '';
-            html += `<td>${escapeHtml(String(value))}</td>`;
-        });
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
-    previewTable.innerHTML = html;
-}
-
-// Step Navigation
-backBtn.addEventListener('click', () => {
-    uploadStep.style.display = 'block';
-    configStep.style.display = 'none';
-    fileInput.value = '';
-    fileName.textContent = '';
-    currentFile = null;
-});
-
-nextDwlBtn.addEventListener('click', () => {
-    configStep.style.display = 'none';
-    dwlUploadStep.style.display = 'block';
-});
-
-backDwlBtn.addEventListener('click', () => {
-    configStep.style.display = 'block';
-    dwlUploadStep.style.display = 'none';
-    dwlFileInput.value = '';
-    dwlFileName.textContent = '';
-    currentDwlFile = null;
-    dwlPreviewSection.style.display = 'none';
-    validateDwlBtn.disabled = true;
-});
-
-backModeBtn.addEventListener('click', () => {
-    dwlUploadStep.style.display = 'block';
-    validationModeStep.style.display = 'none';
-});
-
-validateMappingOnlyBtn.addEventListener('click', async () => {
-    validationMode = 'mapping-only';
-    await handleValidateMappingOnly();
-});
-
-validateWithDwlBtn.addEventListener('click', async () => {
-    validationMode = 'with-dwl';
-    await handleValidateWithDwl();
-});
-
-validateDwlBtn.addEventListener('click', () => {
-    validationModeStep.style.display = 'block';
-    dwlUploadStep.style.display = 'none';
-});
-
-startOverBtn.addEventListener('click', () => {
-    uploadStep.style.display = 'block';
-    configStep.style.display = 'none';
-    dwlUploadStep.style.display = 'none';
-    validationModeStep.style.display = 'none';
-    resultsStep.style.display = 'none';
-    fileInput.value = '';
-    fileName.textContent = '';
-    dwlFileInput.value = '';
-    dwlFileName.textContent = '';
-    currentFile = null;
-    currentDwlFile = null;
-    validationMode = null;
-    dwlPreviewSection.style.display = 'none';
-    validateDwlBtn.disabled = true;
-});
-
-async function handleValidateMappingOnly() {
+async function handleValidate() {
     const sourceColumn = sourceColumnSelect.value;
     const targetColumn = targetColumnSelect.value;
     const startRow = parseInt(startRowInput.value);
@@ -249,17 +130,29 @@ async function handleValidateMappingOnly() {
         return;
     }
     
-    const formData = new FormData();
-    formData.append('file', currentFile);
-    formData.append('source_column', sourceColumn);
-    formData.append('target_column', targetColumn);
-    formData.append('start_row', startRow);
+    if (hasDwlFile && !currentDwlFile) {
+        alert('DWL file was selected but not loaded');
+        return;
+    }
     
     loadingDiv.style.display = 'block';
-    loadingText.textContent = 'Validating mapping...';
+    loadingText.textContent = hasDwlFile ? 'Validating against DWL...' : 'Validating mapping...';
     
     try {
-        const response = await fetch(`${API_BASE}/validate`, {
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('source_column', sourceColumn);
+        formData.append('target_column', targetColumn);
+        formData.append('start_row', startRow);
+        
+        let endpoint = `${API_BASE}/validate`;
+        if (hasDwlFile) {
+            endpoint = `${API_BASE}/validate-against-dwl`;
+            formData.set('mapping_file', currentFile);
+            formData.append('dwl_file', currentDwlFile);
+        }
+        
+        const response = await fetch(endpoint, {
             method: 'POST',
             body: formData
         });
@@ -270,233 +163,168 @@ async function handleValidateMappingOnly() {
         }
         
         const result = await response.json();
+        displayResults(result);
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    } finally {
+        loadingDiv.style.display = 'none';
+    }
+}
+
+function displayResults(result) {
+    // Clear previous results
+    document.getElementById('mapped-list').innerHTML = '';
+    document.getElementById('unmapped-list').innerHTML = '';
+    document.getElementById('source-found-list').innerHTML = '';
+    document.getElementById('source-not-found-list').innerHTML = '';
+    document.getElementById('target-found-list').innerHTML = '';
+    document.getElementById('target-not-found-list').innerHTML = '';
+    
+    // Show/hide DWL tab
+    const dwlTab = document.getElementById('dwl-tab');
+    if (hasDwlFile) {
+        dwlTab.style.display = 'block';
+        displayDwlResults(result);
+    } else {
+        dwlTab.style.display = 'none';
         displayMappingResults(result);
-    } catch (error) {
-        alert(`Error: ${error.message}`);
-    } finally {
-        loadingDiv.style.display = 'none';
-    }
-}
-
-async function handleValidateWithDwl() {
-    const sourceColumn = sourceColumnSelect.value;
-    const targetColumn = targetColumnSelect.value;
-    const startRow = parseInt(startRowInput.value);
-    
-    if (!sourceColumn || !targetColumn) {
-        alert('Please select both source and target columns');
-        return;
     }
     
-    if (isNaN(startRow) || startRow < 1) {
-        alert('Please enter a valid start row');
-        return;
-    }
-    
-    if (!currentDwlFile) {
-        alert('Please select a DWL file');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('mapping_file', currentFile);
-    formData.append('dwl_file', currentDwlFile);
-    formData.append('source_column', sourceColumn);
-    formData.append('target_column', targetColumn);
-    formData.append('start_row', startRow);
-    
-    loadingDiv.style.display = 'block';
-    loadingText.textContent = 'Validating against DWL...';
-    
-    try {
-        const response = await fetch(`${API_BASE}/validate-against-dwl`, {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error);
-        }
-        
-        const result = await response.json();
-        displayDwlValidationResults(result);
-    } catch (error) {
-        alert(`Error: ${error.message}`);
-    } finally {
-        loadingDiv.style.display = 'none';
-    }
+    // Show results section and reset to first tab
+    resultsSection.style.display = 'block';
+    switchTab('mapped');
 }
 
 function displayMappingResults(result) {
-    // Display summary
-    const summaryHtml = `
-        <h3>Summary</h3>
-        <div class="summary-stats">
-            <div class="stat">
-                <div class="stat-value">${result.total_fields}</div>
-                <div class="stat-label">Total Fields</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" style="color: #28a745;">${result.mapped_count}</div>
-                <div class="stat-label">Mapped</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" style="color: #dc3545;">${result.unmapped_count}</div>
-                <div class="stat-label">Unmapped</div>
-            </div>
-        </div>
-        <div style="text-align: center; margin-top: 10px;">
-            <span class="status-badge ${result.validation_status.toLowerCase()}">
-                ${result.validation_status}
-            </span>
-        </div>
-    `;
-    document.getElementById('summary').innerHTML = summaryHtml;
-    document.getElementById('validation-type-badge').innerHTML = '<span class="info-badge">📋 Mapping Only Validation</span>';
-    
-    // Display mapped fields
-    const mappedHtml = result.mapped.length > 0 ? result.mapped.map(m => `
-        <div class="result-item">
-            <div style="flex: 1; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span class="result-item-source">${escapeHtml(m.source)}</span>
-                <span class="result-item-arrow">→</span>
-                <span class="result-item-target">${escapeHtml(m.target)}</span>
-                <span class="result-item-row">(Row ${m.row})</span>
-            </div>
-        </div>
-    `).join('') : '<div class="empty-state">No mapped fields</div>';
-    document.getElementById('mapped-list').innerHTML = mappedHtml;
-    document.getElementById('mapped-count').textContent = result.mapped_count;
-    
-    // Display unmapped fields (if any)
-    const unmappedSection = document.getElementById('unmapped-section');
-    if (result.unmapped_count > 0) {
-        unmappedSection.style.display = 'block';
-        const unmappedHtml = result.unmapped.map(u => `
-            <div class="result-item">
-                <div style="flex: 1; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span class="result-item-source">${escapeHtml(u.source)}</span>
-                    <span class="result-item-arrow">→</span>
-                    <span class="result-item-target" style="color: #dc3545; font-weight: 500;">${escapeHtml(u.target)}</span>
-                    <span class="result-item-row">(Row ${u.row})</span>
+    // Mapped fields
+    const mappedList = document.getElementById('mapped-list');
+    if (result.mapped && result.mapped.length > 0) {
+        mappedList.innerHTML = result.mapped.map(m => `
+            <div class="field-item">
+                <div class="field-header">
+                    <span class="field-name">${escapeHtml(m.source)}</span>
+                    <span class="field-arrow">→</span>
+                    <span class="field-name">${escapeHtml(m.target)}</span>
                 </div>
+                <div class="field-details">Row ${m.row}</div>
             </div>
         `).join('');
-        document.getElementById('unmapped-list').innerHTML = unmappedHtml;
-        document.getElementById('unmapped-count').textContent = result.unmapped_count;
     } else {
-        unmappedSection.style.display = 'none';
+        mappedList.innerHTML = '<div class="empty-state">No mapped fields found</div>';
     }
     
-    // Hide DWL results section
-    document.getElementById('dwl-results-section').style.display = 'none';
-    
-    validationModeStep.style.display = 'none';
-    resultsStep.style.display = 'block';
+    // Unmapped fields
+    const unmappedList = document.getElementById('unmapped-list');
+    if (result.unmapped && result.unmapped.length > 0) {
+        unmappedList.innerHTML = result.unmapped.map(u => `
+            <div class="field-item error">
+                <div class="field-header">
+                    <span class="field-name">${escapeHtml(u.source)}</span>
+                    <span class="field-arrow">→</span>
+                    <span class="field-name" style="color: #dc3545;">⚠️ ${escapeHtml(u.target)}</span>
+                </div>
+                <div class="field-details">Row ${u.row}</div>
+            </div>
+        `).join('');
+    } else {
+        unmappedList.innerHTML = '<div class="empty-state">No unmapped fields</div>';
+    }
 }
 
-function displayDwlValidationResults(result) {
-    // Display summary
-    const summaryHtml = `
-        <h3>Summary</h3>
-        <div class="summary-stats">
-            <div class="stat">
-                <div class="stat-value">${result.total_mappings}</div>
-                <div class="stat-label">Total Mappings</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" style="color: #28a745;">${result.source_fields.found + result.target_fields.found}</div>
-                <div class="stat-label">Fields Found in DWL</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" style="color: #dc3545;">${result.source_fields.not_found + result.target_fields.not_found}</div>
-                <div class="stat-label">Fields Not Found</div>
-            </div>
-        </div>
-        <div style="text-align: center; margin-top: 10px;">
-            <span class="status-badge ${result.validation_status.toLowerCase()}">
-                ${result.validation_status}
-            </span>
-        </div>
-    `;
-    document.getElementById('summary').innerHTML = summaryHtml;
-    document.getElementById('validation-type-badge').innerHTML = '<span class="info-badge">⚙️ DWL Script Validation</span>';
-    
-    // Hide basic mapping section
-    document.getElementById('mapped-section').style.display = 'none';
-    document.getElementById('unmapped-section').style.display = 'none';
-    
-    // Show DWL results section
-    const dwlResultsSection = document.getElementById('dwl-results-section');
-    dwlResultsSection.style.display = 'block';
-    
-    // Display source fields found
-    const sourceFoundSection = document.getElementById('source-found-section');
-    if (result.source_fields.found > 0) {
-        sourceFoundSection.style.display = 'block';
-        const sourceFoundHtml = result.source_fields.found_list.map(item => `
-            <div class="result-item">
-                <span class="result-item-field">${escapeHtml(item.field)}</span>
-                <span class="result-item-row">(Row ${item.row})</span>
+function displayDwlResults(result) {
+    // Source fields found
+    const sourceFoundList = document.getElementById('source-found-list');
+    if (result.source_fields.found_list && result.source_fields.found_list.length > 0) {
+        sourceFoundList.innerHTML = result.source_fields.found_list.map(item => `
+            <div class="field-item">
+                <div class="field-header">
+                    <span class="field-name">${escapeHtml(item.field)}</span>
+                </div>
+                <div class="field-details">Row ${item.row}</div>
             </div>
         `).join('');
-        document.getElementById('source-found-list').innerHTML = sourceFoundHtml;
-        document.getElementById('source-found-count').textContent = result.source_fields.found;
     } else {
-        sourceFoundSection.style.display = 'none';
+        sourceFoundList.innerHTML = '<div class="empty-state">No source fields found in DWL</div>';
     }
     
-    // Display source fields not found
-    const sourceNotFoundSection = document.getElementById('source-not-found-section');
-    if (result.source_fields.not_found > 0) {
-        sourceNotFoundSection.style.display = 'block';
-        const sourceNotFoundHtml = result.source_fields.not_found_list.map(item => `
-            <div class="result-item">
-                <span class="result-item-field" style="color: #dc3545; font-weight: 500;">${escapeHtml(item.field)}</span>
-                <span class="result-item-row">(Row ${item.row})</span>
+    // Source fields not found
+    const sourceNotFoundList = document.getElementById('source-not-found-list');
+    if (result.source_fields.not_found_list && result.source_fields.not_found_list.length > 0) {
+        sourceNotFoundList.innerHTML = result.source_fields.not_found_list.map(item => `
+            <div class="field-item error">
+                <div class="field-header">
+                    <span class="field-name">⚠️ ${escapeHtml(item.field)}</span>
+                </div>
+                <div class="field-details">Row ${item.row}</div>
             </div>
         `).join('');
-        document.getElementById('source-not-found-list').innerHTML = sourceNotFoundHtml;
-        document.getElementById('source-not-found-count').textContent = result.source_fields.not_found;
     } else {
-        sourceNotFoundSection.style.display = 'none';
+        sourceNotFoundList.innerHTML = '<div class="empty-state">All source fields found</div>';
     }
     
-    // Display target fields found
-    const targetFoundSection = document.getElementById('target-found-section');
-    if (result.target_fields.found > 0) {
-        targetFoundSection.style.display = 'block';
-        const targetFoundHtml = result.target_fields.found_list.map(item => `
-            <div class="result-item">
-                <span class="result-item-field">${escapeHtml(item.field)}</span>
-                <span class="result-item-row">(Row ${item.row})</span>
+    // Target fields found
+    const targetFoundList = document.getElementById('target-found-list');
+    if (result.target_fields.found_list && result.target_fields.found_list.length > 0) {
+        targetFoundList.innerHTML = result.target_fields.found_list.map(item => `
+            <div class="field-item">
+                <div class="field-header">
+                    <span class="field-name">${escapeHtml(item.field)}</span>
+                </div>
+                <div class="field-details">Row ${item.row}</div>
             </div>
         `).join('');
-        document.getElementById('target-found-list').innerHTML = targetFoundHtml;
-        document.getElementById('target-found-count').textContent = result.target_fields.found;
     } else {
-        targetFoundSection.style.display = 'none';
+        targetFoundList.innerHTML = '<div class="empty-state">No target fields found in DWL</div>';
     }
     
-    // Display target fields not found
-    const targetNotFoundSection = document.getElementById('target-not-found-section');
-    if (result.target_fields.not_found > 0) {
-        targetNotFoundSection.style.display = 'block';
-        const targetNotFoundHtml = result.target_fields.not_found_list.map(item => `
-            <div class="result-item">
-                <span class="result-item-field" style="color: #dc3545; font-weight: 500;">${escapeHtml(item.field)}</span>
-                <span class="result-item-row">(Row ${item.row})</span>
+    // Target fields not found
+    const targetNotFoundList = document.getElementById('target-not-found-list');
+    if (result.target_fields.not_found_list && result.target_fields.not_found_list.length > 0) {
+        targetNotFoundList.innerHTML = result.target_fields.not_found_list.map(item => `
+            <div class="field-item error">
+                <div class="field-header">
+                    <span class="field-name">⚠️ ${escapeHtml(item.field)}</span>
+                </div>
+                <div class="field-details">Row ${item.row}</div>
             </div>
         `).join('');
-        document.getElementById('target-not-found-list').innerHTML = targetNotFoundHtml;
-        document.getElementById('target-not-found-count').textContent = result.target_fields.not_found;
     } else {
-        targetNotFoundSection.style.display = 'none';
+        targetNotFoundList.innerHTML = '<div class="empty-state">All target fields found</div>';
+    }
+}
+
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + '-tab');
+    if (selectedTab) {
+        selectedTab.classList.add('active');
     }
     
-    validationModeStep.style.display = 'none';
-    resultsStep.style.display = 'block';
+    // Add active class to clicked button
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+}
+
+function resetForm() {
+    fileInput.value = '';
+    fileName.textContent = 'Choose file';
+    dwlFileInput.value = '';
+    dwlFileName.textContent = 'Choose file';
+    currentFile = null;
+    currentDwlFile = null;
+    hasDwlFile = false;
+    columns = [];
+    configSection.style.display = 'none';
+    resultsSection.style.display = 'none';
 }
 
 function escapeHtml(text) {
